@@ -19,9 +19,16 @@ func fileserverHandler(filepathRoot string) http.HandlerFunc {
 }
 
 func (cfg *apiConfig) countNumReq(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	hits := fmt.Sprintf("Hits: %d", cfg.fileserverHits.Load())
+	hits := fmt.Sprintf(`
+		<html>
+		<body>
+			<h1>Welcome, Chirpy Admin</h1>
+			<p>Chirpy has been visited %d times!</p>
+		</body>
+		</html>
+	`, cfg.fileserverHits.Load())
 	w.Write([]byte(hits))
 }
 
@@ -32,8 +39,8 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(fileserverHandler((filepathRoot))))
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
-	mux.HandleFunc("GET /api/metrics", apiCfg.countNumReq)
-	mux.HandleFunc("POST /api/reset", apiCfg.handlerReset)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.countNumReq)
+	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
 	server := http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
