@@ -1,14 +1,21 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"sync/atomic"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+	"github.com/samnodier/chirpy/internal/database"
 )
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
+	dbQueries      *database.Queries
 }
 
 func fileserverHandler(filepathRoot string) http.HandlerFunc {
@@ -33,9 +40,18 @@ func (cfg *apiConfig) countNumReq(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	godotenv.Load()
 	const filepathRoot = "."
 	const port = "8080"
-	apiCfg := apiConfig{}
+	dbURL := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Printf("error opening the database: %s", err)
+	}
+	dbQueries := database.New(db)
+	apiCfg := apiConfig{
+		dbQueries: dbQueries,
+	}
 	mux := http.NewServeMux()
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(fileserverHandler((filepathRoot))))
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
