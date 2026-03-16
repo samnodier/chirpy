@@ -5,7 +5,20 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 )
+
+func replaceBadWords(text string) string {
+	cleanWords := []string{}
+	for word := range strings.SplitSeq(text, " ") {
+		if strings.ToLower(word) == "kerfuffle" || strings.ToLower(word) == "sharbert" || strings.ToLower(word) == "fornax" {
+			cleanWords = append(cleanWords, "****")
+		} else {
+			cleanWords = append(cleanWords, word)
+		}
+	}
+	return strings.Join(cleanWords, " ")
+}
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
 	type returnVals struct {
@@ -17,7 +30,7 @@ func respondWithError(w http.ResponseWriter, code int, msg string) {
 	respondWithJSON(w, code, respBody)
 }
 
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+func respondWithJSON(w http.ResponseWriter, code int, payload any) {
 	data, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("Error marshalling JSON: %s", err)
@@ -45,10 +58,10 @@ func handleValidateChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	type returnVals struct {
-		Valid bool `json:"valid"`
+		CleanedBody string `json:"cleaned_body"`
 	}
 	respBody := returnVals{
-		Valid: true,
+		CleanedBody: replaceBadWords(params.Body),
 	}
 	respondWithJSON(w, 200, respBody)
 }
