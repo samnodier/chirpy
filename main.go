@@ -15,7 +15,8 @@ import (
 
 type apiConfig struct {
 	fileserverHits atomic.Int32
-	dbQueries      *database.Queries
+	db             *database.Queries
+	platform       string
 }
 
 func fileserverHandler(filepathRoot string) http.HandlerFunc {
@@ -44,20 +45,24 @@ func main() {
 	const filepathRoot = "."
 	const port = "8080"
 	dbURL := os.Getenv("DB_URL")
+	platform := os.Getenv("PLATFORM")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Printf("error opening the database: %s", err)
 	}
 	dbQueries := database.New(db)
-	apiCfg := apiConfig{
-		dbQueries: dbQueries,
+	cfg := apiConfig{
+		db:       dbQueries,
+		platform: platform,
 	}
 	mux := http.NewServeMux()
-	mux.Handle("/app/", apiCfg.middlewareMetricsInc(fileserverHandler((filepathRoot))))
+	mux.Handle("/app/", cfg.middlewareMetricsInc(fileserverHandler((filepathRoot))))
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
-	mux.HandleFunc("GET /admin/metrics", apiCfg.countNumReq)
-	mux.HandleFunc("POST /admin/reset", apiCfg.handlerReset)
-	mux.HandleFunc("POST /api/validate_chirp", handleValidateChirp)
+	mux.HandleFunc("GET /admin/metrics", cfg.countNumReq)
+	mux.HandleFunc("POST /admin/reset", cfg.handlerReset)
+	mux.HandleFunc("POST /api/users", cfg.handleUsersCreate)
+	mux.HandleFunc("GET /api/chirps", cfg.handleChirpsGet)
+	mux.HandleFunc("POST /api/chirps", cfg.handleChirpsCreate)
 	server := http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
