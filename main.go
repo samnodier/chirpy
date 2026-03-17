@@ -58,15 +58,21 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/app/", cfg.middlewareMetricsInc(fileserverHandler((filepathRoot))))
 	mux.HandleFunc("GET /api/healthz", handlerReadiness)
+
 	mux.HandleFunc("GET /admin/metrics", cfg.countNumReq)
 	mux.HandleFunc("POST /admin/reset", cfg.handlerReset)
+
 	mux.HandleFunc("POST /api/users", cfg.handleUsersCreate)
+
 	mux.HandleFunc("GET /api/chirps", cfg.handleChirpsGet)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.handleChirpGet)
 	mux.HandleFunc("POST /api/chirps", cfg.handleChirpsCreate)
+
 	server := http.Server{
 		Addr:    ":" + port,
 		Handler: mux,
 	}
+
 	log.Printf("Serving files from %s on port: %s...\n", filepathRoot, port)
 	log.Fatal(server.ListenAndServe())
 }
