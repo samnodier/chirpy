@@ -17,6 +17,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	jwtSecret      string
 }
 
 func fileserverHandler(filepathRoot string) http.HandlerFunc {
@@ -46,14 +47,16 @@ func main() {
 	const port = "8080"
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
+	jwtSecret := os.Getenv("JWT_SECRET")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Printf("error opening the database: %s", err)
 	}
 	dbQueries := database.New(db)
 	cfg := apiConfig{
-		db:       dbQueries,
-		platform: platform,
+		db:        dbQueries,
+		platform:  platform,
+		jwtSecret: jwtSecret,
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/app/", cfg.middlewareMetricsInc(fileserverHandler((filepathRoot))))

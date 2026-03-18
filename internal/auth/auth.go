@@ -2,6 +2,8 @@ package auth
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/alexedwards/argon2id"
 )
@@ -27,4 +29,21 @@ func CheckPasswordHash(password, hash string) (bool, error) {
 		return false, fmt.Errorf("Error comparing password: %w", err)
 	}
 	return match, nil
+}
+
+func GetBearerToken(headers http.Header) (string, error) {
+	reqToken := headers.Get("Authorization")
+	if reqToken == "" {
+		return "", fmt.Errorf("Authorization header is missing")
+	}
+	splitToken := strings.Split(reqToken, "Bearer ")
+	if len(splitToken) != 2 {
+		return "", fmt.Errorf("invalid Authorization header format")
+	}
+
+	token := strings.TrimSpace(splitToken[1])
+	if token == "" {
+		return "", fmt.Errorf("token is missing from authorization header")
+	}
+	return token, nil
 }

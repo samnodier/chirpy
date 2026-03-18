@@ -14,10 +14,6 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Password         string `json:"password"`
 		ExpiresInSeconds *int   `json:"expires_in_seconds,omitempty"`
 	}
-	type response struct {
-		User
-		Token string `json:"token"`
-	}
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	if err := decoder.Decode(&params); err != nil {
@@ -31,24 +27,18 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	match, err := auth.CheckPasswordHash(params.Password, user.HashedPassword)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password", err)
+		respondWithError(w, http.StatusInternalServerError, "Couldn't check the password hash", err)
 		return
 	}
 	if !match {
 		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password", nil)
 		return
 	}
-	duration := time.Hour
+	duration := 24 * time.Hour
 	if params.ExpiresInSeconds != nil && *params.ExpiresInSeconds < int(duration.Seconds()) {
 		duration = time.Duration(*params.ExpiresInSeconds) * time.Second
 	}
-	token, err := auth.MakeJWT(user.ID, cfg.jwtSecret, duration)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't create the token", err)
-		return
-	}
-	respondWithJSON(w, http.StatusOK, response{
-		User:  databaseUserToUser(user),
-		Token: token,
-	})
+	token, err := auth.GetBearerToken(r.Header)
+	respondWithJSON(w, http.StatusOK, databaseUserToUser(user))
+
 }
