@@ -24,3 +24,7 @@ SELECT chirps.* FROM chirps
 JOIN users on chirps.user_id = users.id
 WHERE users.email = $1
 ORDER BY chirps.created_at DESC;
+
+-- name: DeleteChirp :exec
+DELETE FROM chirps
+WHERE id = $1 AND user_id = $2;
