@@ -17,7 +17,7 @@ WHERE id = $1 LIMIT 1;
 -- name: GetChirpsForUser :many
 SELECT * FROM chirps
 WHERE user_id = $1
-ORDER BY created_at DESC;
+ORDER BY created_at ASC;
 
 -- name: GetChirpsByEmail :many
 SELECT chirps.* FROM chirps
