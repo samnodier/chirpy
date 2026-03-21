@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/google/uuid"
 	"github.com/samnodier/chirpy/internal/database"
@@ -9,6 +10,7 @@ import (
 
 func (cfg *apiConfig) handleChirpsGet(w http.ResponseWriter, r *http.Request) {
 	authorIDString := r.URL.Query().Get("author_id")
+	sortString := r.URL.Query().Get("sort")
 
 	var dbChirps []database.Chirp
 	var err error
@@ -30,6 +32,11 @@ func (cfg *apiConfig) handleChirpsGet(w http.ResponseWriter, r *http.Request) {
 	chirps := []Chirp{}
 	for _, dbChirp := range dbChirps {
 		chirps = append(chirps, databaseChirpToChirp(dbChirp))
+	}
+	if sortString == "desc" {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].CreatedAt.After(chirps[j].CreatedAt) })
+	} else {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].CreatedAt.Before(chirps[j].CreatedAt) })
 	}
 	respondWithJSON(w, 200, chirps)
 }
