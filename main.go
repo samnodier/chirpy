@@ -18,6 +18,7 @@ type apiConfig struct {
 	db             *database.Queries
 	platform       string
 	jwtSecret      string
+	polkaKey       string
 }
 
 func fileserverHandler(filepathRoot string) http.HandlerFunc {
@@ -48,6 +49,7 @@ func main() {
 	dbURL := os.Getenv("DB_URL")
 	platform := os.Getenv("PLATFORM")
 	jwtSecret := os.Getenv("JWT_SECRET")
+	polkaKey := os.Getenv("POLKA_KEY")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Printf("error opening the database: %s", err)
@@ -57,6 +59,7 @@ func main() {
 		db:        dbQueries,
 		platform:  platform,
 		jwtSecret: jwtSecret,
+		polkaKey:  polkaKey,
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/app/", cfg.middlewareMetricsInc(fileserverHandler((filepathRoot))))

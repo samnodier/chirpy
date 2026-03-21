@@ -9,13 +9,14 @@ import (
 
 func (cfg *apiConfig) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	refreshToken, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Missing refresh token", err)
+		return
+	}
 	type response struct {
 		Token string `json:"token"`
 	}
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Missing or invalid token", err)
-		return
-	}
+
 	dbToken, err := cfg.db.GetToken(r.Context(), refreshToken)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Token not found or expired", err)
